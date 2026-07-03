@@ -1,0 +1,208 @@
+#include <atomic>
+#include <optional>
+
+template <typename T>
+struct LockFreeStack
+{
+private:
+    struct Node
+    {
+        T val{};
+        Node *next{nullptr};
+
+        Node(T const& v) : val(v), next(nullptr) {}
+    };
+    
+    struct alignas(16) TaggedPointer
+    {
+        Node* ptr{nullptr};
+        uint64_t tag{};
+    };
+    
+	// To ensure the hardware supports lock-free 16-byte atomic operations
+    static_assert(std::atomic<TaggedPointer>::is_always_lock_free, "Target Architecture does not support Double Width CAS!");
+    
+    std::atomic<TaggedPointer> head;
+    
+public:
+
+    LockFreeStack()
+    {
+        head.store(TaggedPointer{}, std::memory_order_relaxed);
+    }
+	
+	~LockFreeStack()
+	{
+		TaggedPointer current = head.load(std::memory_order_relaxed);
+		while (current.ptr)
+		{
+			Node* next = current.ptr->next;
+			delete current.ptr;
+			current.ptr = next;
+		}
+	}
+
+    void push(T val)
+    {
+        Node* new_node = new Node(val);
+		TaggedPointer old_head = head.load(std::memory_order_relaxed);
+		
+		while(true)
+		{
+			new_node->next = old_head.ptr;
+			
+			TaggedPointer new_head{new_node, old_head.tag + 1};
+			
+			if (head.compare_exchange_weak(old_head, new_head, std::memory_order_release, std::memory_order_relaxed))
+				return;
+			
+			// If CAS fails, old_head is updated automatically, loop retries
+		}
+    }
+
+	// ABA catastrophe prevented using Double Width CAS
+    std::optional<T> pop()
+    {
+        TaggedPointer old_head = head.load(std::memory_order_acquire);
+		while (true)
+		{
+			if (old_head.ptr == nullptr)	// empty stack
+				return std::nullopt;
+			
+			Node* next_node = old_head.ptr->next;
+			TaggedPointer new_head{next_node, old_head.tag + 1};
+			
+			if (head.compare_exchange_weak(old_head, new_head, std::memory_order_acq_rel, std::memory_order_relaxed))
+			{
+				T result = old_head.ptr->val;
+				delete old_head.ptr;	// Safely reclaim memory
+				return result;
+			}
+			// If CAS fails, old_head is updated automatically, loop retries
+		}
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+#include <atomic>
+#include <iostream>
+#include <optional>
+#include <cstdint>
+
+template <typename T>
+class LockFreeStack {
+private:
+    struct Node {
+        T data;
+        Node* next;
+
+        Node(const T& val) : data(val), next(nullptr) {}
+    };
+
+    // A Tagged Pointer structure to eliminate the ABA problem
+    struct alignas(16) TaggedPointer {
+        Node* ptr;
+        uint64_t tag; // Generation counter
+    };
+
+    // Ensure the hardware supports lock-free 16-byte atomic operations
+    // If this is false, the compiler will fall back to internal locks, defeating the purpose.
+    static_assert(std::atomic<TaggedPointer>::is_always_lock_free, 
+                  "Target architecture does not support lock-free DWCAS!");
+
+    std::atomic<TaggedPointer> head;
+
+public:
+    LockFreeStack() {
+        head.store(TaggedPointer{nullptr, 0}, std::memory_order_relaxed);
+    }
+
+    ~LockFreeStack() {
+        // Clean up remaining nodes sequentially
+        TaggedPointer current = head.load(std::memory_order_relaxed);
+        while (current.ptr) {
+            Node* next = current.ptr->next;
+            delete current.ptr;
+            current.ptr = next;
+        }
+    }
+
+    // Push is safe from ABA natively, but must synchronize with Pop
+    void push(const T& val) {
+        Node* new_node = new Node(val);
+        TaggedPointer old_head = head.load(std::memory_order_relaxed);
+
+        while (true) {
+            new_node->next = old_head.ptr;
+
+            // Prepare the new head. We increment the tag to signify a state change.
+            TaggedPointer new_head{new_node, old_head.tag + 1};
+
+            // Release semantics ensure that the initialization of new_node 
+            // is visible to any thread that reads this new head.
+            if (head.compare_exchange_weak(old_head, new_head,
+                                           std::memory_order_release,
+                                           std::memory_order_relaxed)) {
+                return;
+            }
+            // If CAS fails, old_head is automatically updated with the current head value
+        }
+    }
+
+    // Pop implements Double-Width CAS to prevent the ABA catastrophe
+    std::optional<T> pop() {
+        TaggedPointer old_head = head.load(std::memory_order_acquire);
+
+        while (true) {
+            if (old_head.ptr == nullptr) {
+                return std::nullopt; // Stack is empty
+            }
+
+            // Read the next pointer. 
+            // NOTE: In a pure production system, you need Hazard Pointers or Epoch-Based 
+            // Reclamation here to guarantee 'old_head.ptr' isn't deleted by another thread 
+            // right at this step.
+            Node* next_node = old_head.ptr->next;
+            TaggedPointer new_head{next_node, old_head.tag + 1};
+
+            // Acquire-Release guarantees visibility across threads
+            if (head.compare_exchange_weak(old_head, new_head,
+                                           std::memory_order_acq_rel,
+                                           std::memory_order_relaxed)) {
+                
+                T result = old_head.ptr->data;
+                delete old_head.ptr; // Safely reclaim memory
+                return result;
+            }
+            // If CAS fails, old_head is updated automatically, loop retries
+        }
+    }
+};
+*/
