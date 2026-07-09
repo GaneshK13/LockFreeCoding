@@ -3,10 +3,11 @@
 ////////////////
 
 //-------------
-For sharing state, instead of events
-Best used for mkt data single/few producer/s and multiple consumers.
-Wait Free Producer & Lock Free Consumer.
-When shared data is small - which can fit within one cache line.
+// For sharing state, instead of events
+// Best used for mkt data single/few producer/s and multiple consumers. [Give me current depth data]
+// Wait Free Producer & Lock Free Consumer.
+// When shared data is small - which can fit within one cache line.
+// Consumer has to check if data is available
 //-------------
 
 
