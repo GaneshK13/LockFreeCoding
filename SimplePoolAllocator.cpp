@@ -66,8 +66,6 @@ class SimplePoolAllocator
 // Usage //
 ///////////
 
-
-
 std::cout << "Manual allocation & construction\n";
 for (int i = 0; i < 34; ++i)
 {
@@ -78,7 +76,7 @@ for (int i = 0; i < 34; ++i)
 	new (objects[i]) TestObject();
 }
 
-
+--------------------------------------------------------
 
 std::cout << Manual destruction & deallocation\n";
 for (int i = 0; i < 4; ++i)
@@ -89,4 +87,27 @@ for (int i = 0; i < 4; ++i)
 	// step 2: return memory to pool
 	custom_pool.deallocate(objects[i]);
 }
+
+--------------------------------------------------------
+--------------------------------------------------------
+
+using AllocTraits = std::allocator_traits<SimplePoolAllocator<TestObject>>;
+
+for (int i = 0; i < 4; ++i)
+{
+	// allocator_traits provides a standard interface
+	objects[i] = AllocTraits::allocate(custom_pool, 1);
+	AllocTraits::construct(custom_pool, objects[i]);
+}
+
+--------------------------------------------------------
+
+for (int i = 0; i < 4; ++i)
+{
+	// allocator_traits handles destruction and deallocation
+	AllocTraits::destroy(custom_pool, objects[i]);
+	AllocTraits::deallocate(custom_pool, objects[i], 1);
+}
+	
+--------------------------------------------------------
 */
