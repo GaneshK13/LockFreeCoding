@@ -1,3 +1,21 @@
+/*
+/////////////////////
+// POOL ALLOCATORS //
+/////////////////////
+
+// Extremely fast
+// Eliminates memory fragmentation for object type
+// Deallocation: Granular (any object)
+// What's it best for?
+	// 1. Nodes in a list/graph/tree.
+	// 2. Any system that frequently creates and destroys many objects of the same size
+--------------------------------------------------------
+// Only for single fixed size
+// Reserves a large block of memory up front
+// Reusable objects
+
+*/
+
 // POOL_SIZE = 56
 
 template <typename T>
