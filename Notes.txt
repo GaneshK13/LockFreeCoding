@@ -1,0 +1,106 @@
+Chapter 1
+	std::mutex
+		lock()
+			OS kernel
+			CPU Pipeline
+			Every other thread sharing cache line
+		Context Switch
+			OS Scheduler
+			Thread moved off CPU
+			Exec context saved, General purpose registers, program counter, stack pointer, floating point state
+			1us - 10us
+			CPU Caches polluted and data becomes cold for the thread which was moved off cpu
+			L2 100-300 cycles
+			cache thrashing
+		user space to kernel transition
+			syscall futex - park the waiting thread
+			100-300 ns
+		priority inversion
+			high priority thread not getting lock because low priority thread holds and medium prio. thread keeps on getting switched
+		locks are blocks - full acquire barrier
+			prevents compiler & CPU from reordering memory ops across lock boundary
+			prevents instruction level parallelism inside the critical section
+			1-40 us (context switch, kernel crossing, cache reload costs)
+		mutexs good:
+			long critical section
+			low contention
+			less code complexity
+		obstruction freedom
+			weakest guarantee
+			complete its ops in finite no. of steps when all other threads are paused
+			no deadlocks
+			no circular dependency
+			livelock - threads undo each others work so no net progress
+		lock freedom
+			at least one thread makes progress
+			suffer from starvation
+			progress guaranteed at system level and not at thread level
+		wait freedom
+			strongest guarantee
+			every threads completes its ops in bounded no. of steps
+		Amdahl's law
+		cache line contention
+		MESI protocol
+		coherency serialization point
+		shared cache line creates contention
+		cross-NUMA memory access (multi-socket server) (remote-memory access latency penalty)
+
+----------
+Chapter 2
+	main memory access
+		60-100 ns
+		single clock cycle = 0.25 ns
+		240-400 clock cycles
+	L1
+		private per core
+		32-64 KB separate Data & Instruction cache
+		4-5 clock cycles
+	L2
+		private per core
+		256KB to 1 MB
+		12-16 cycles
+	L3 (LLC)
+		shared
+		8MB to 64MB
+		40-50 cycles
+	Unit of transfer is cache line = 64 bytes
+	Pointer chasing
+		use software prefetch hints (to partially compensate)
+		<xmmintrin.h>
+		_mm_prefetch(reinterpret_cast<const char*>(current->next), _MM_HINT_T0);
+		_MM_HINT_T0 -> L1, L2, L3
+		_MM_HINT_T1 -> L1, L2
+		_MM_HINT_NTA -> read once and never look at it again
+	MESI hardware state machine
+		every cache line in every core has to participate
+		Modified
+			single core access
+			value different from main memory
+		Exclusive
+			single core access
+			value same as main memory
+			write required moving to Modified, without any inter-core communication
+		Shared
+			multi core access
+			value same as main memory
+			write on one core requires request for ownership and invalidation acknowledgement round trip from other cores (10-40 ns)
+		Invalidate
+			non-usable
+	Cache Invalidation storm
+		False sharing
+		Centrally shared sequence no. that every thread increments (ping-ponging = bounces between cores => at high thread counts, threads spend more time waiting for cache line ownership than doing actual work)
+	Store buffer (small queue of pending writes)
+	Perf/VTune
+	std::hardware_destructive_interference_size
+	std::hardware_constructive_interference_size (spacial locality)
+	NUMA aware allocation
+		numactl library
+			mbind
+			set_mempolicy syscalls
+		custom allocator
+			*ptr = numa_alloc_onnode(bytes, node)
+			numa_free(ptr, bytes)
+		partition data structure by socket ownership
+		Thread affinity (makes NUMA locality predictable at runtime)
+			pinning a thread to a specific core
+			pthread_setaffinity_np
