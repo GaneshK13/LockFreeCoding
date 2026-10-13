@@ -104,3 +104,53 @@ Chapter 2
 		Thread affinity (makes NUMA locality predictable at runtime)
 			pinning a thread to a specific core
 			pthread_setaffinity_np
+
+----------
+Chapter 3
+	std::atomic
+		hardware synchronization primitive
+		solves
+			tearing
+				read of a multi-byte value observes a partial write
+				32 bit platform reading a 64 byte value
+			
+		type width, alignment requirements, platform capabilities
+		might use internal mutex to preserve atomicity guarantee
+			expensive
+			when alignment requirement voilated
+			types exceeding native word size
+			is_lock_free
+			is_always_lock_free static (C++17)
+		misaligned 8 byte value that straddles two cache lines is not atomic
+			hardware may use two separate bus transactions
+		128 bit CAS
+			CMPXCHG16B instruction
+		x86-64 - strong memory model
+				as x86 always carry acquire semantics
+			load relaxed: compiles to a MOV instruction
+			store relaxed: MOV
+			store sequential consistency: either MOV followed by MFENCE OR XCHG instruction
+		ARM 64
+			load relaxed: LDR
+			load acquire: LDAR
+			store release: STLR
+		compare_exchange_strong: no spurious failures. Failure only when other thread changed the value
+		compare_exchange_weak: allowed spurious failures.
+			platforms (ARMS & POWER) where native atomic instruction is a load linked store conditional pair (LLSC pair)
+			used in retry loops
+		trivially copyable: is_trivially_copyable<T>: for copying bytes safely without invoking copy constructor/destructor
+		seq_cst
+			single total global ordering over all sequentially consistent ops across all threads in the program
+			acq release barrier that prevents memory ops from being reordered
+			cost:
+				full memory fence MFENCE
+				x86-64: LOAD already carry acquire & STORE already carry release
+				ARM64: Both load & store require explicit barrier, expensive than the acquire-release variants
+		acq-rel:
+			synchronizes with relationship
+			happens before relationship
+		relaxed:
+			only atomicity guarantee
+			load/store performed without tearing
+	SeqLock
+		allows reader to process without blocking writer
