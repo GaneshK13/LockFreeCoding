@@ -154,3 +154,29 @@ Chapter 3
 			load/store performed without tearing
 	SeqLock
 		allows reader to process without blocking writer
+		makes use of version counter to indicate whether a read was coherent
+		used for publishing mkt data snapshot
+		
+----------
+Chapter 4
+	CAS based vulnerabilities
+		ABA problem
+			t1 reads A from a shared atomic location
+			prepared to perform CAS
+			before t1 executes it, t2 runs
+			t2 changes the value from A -> B -> A
+			t1 resumes and executes its CAS
+			CAS comparison succeeds as location holds value A which matches what t1 read
+		ABA leads to use-after-free crash:
+		Hardware Level Solution
+			DWCAS
+				CMPXCHG16B instruction
+				pair the pointer with version counter called tag
+				every modification to a pointer, increments the tag
+				16 bytes aligned [alignas(16)]
+				compiler must emit CMPXCHG16B
+				GCC/Clang - compile with the cx16 feature enabled, included in march=native or march=x86-64-v2 target flags
+				ARM64: CASP Instruction pair on ARMv8.1-A +
+			Hazard Pointer (C++ 26)
+				preventing freed memory from being reallocated while any thread holds a reference to it.
+			Epoch-based reclamation
