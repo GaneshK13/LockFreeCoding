@@ -160,7 +160,7 @@ Chapter 3
 ----------
 Chapter 4
 	CAS based vulnerabilities
-		ABA problem
+		ABA problem (memory reclamation problem)
 			t1 reads A from a shared atomic location
 			prepared to perform CAS
 			before t1 executes it, t2 runs
@@ -179,4 +179,13 @@ Chapter 4
 				ARM64: CASP Instruction pair on ARMv8.1-A +
 			Hazard Pointer (C++ 26)
 				preventing freed memory from being reallocated while any thread holds a reference to it.
-			Epoch-based reclamation
+				before dereferencing a pointer to a shared object, it publishes that pointer into a per-thread hazard slot
+				lifetime of hazard pointer protection: window btw slot publication and its release
+				Hazard Pointer library manages a per-thread retirement list that accumulates retired objects
+				Memory pressure from deferred reclamation
+				bounded memory overhead is the cost of the safety guarantee
+				Keep the protection window as short as possible
+				release hazard slots immediately after the dereference that required them
+				used in lock free linked list, trees, graphs for protecting multiple nodes at a point
+			Epoch-based reclamation & RCU Dynamics
+----------
