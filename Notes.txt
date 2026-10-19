@@ -188,4 +188,31 @@ Chapter 4
 				release hazard slots immediately after the dereference that required them
 				used in lock free linked list, trees, graphs for protecting multiple nodes at a point
 			Epoch-based reclamation & RCU Dynamics
+				Cheaper when
+					1. frequent read operations
+					2. traversals are deep
+					3. overhead of per-dereference protection accumulates into a measurable fraction of operation's total cost
+				lower per operation overhead for read-heavy conditions
+				Global Epoch & 3 Epochs: 1 current & 2 preceding
+				Before reading, announce participation by recording current epoch into per-thread epoch variable
+				Before deleting the object, places it into a retirement list tagged with the current epoch
+				EBR is efficient compared to hazard pointer: thread participation is declared once per operation, not once per pointer dereference
+				thread that stalls inside epoch, perhaps due to preemption, page faults, or long computation, blocks the global epoch from advancing & prevents reclamation from making progress
+				EBR ties reclamation progress to the slowest active thread
+				RCU: read, make a copy of the object read, update the copy, replace the updated copy with the original
+				RCU pattern shines in configurations where reads vastly outnumber writes
+				RCU is the dominant synchronization mechanism in the Linux Kernel for data structures like routing tables, device driver registries etc
+				Which one to choose: Hazard or EBC
+					1. read-to-write ratio: reads dominates & traversals are heavy, EBR's once per operation announcement cost makes it more efficient
+					2. latency-predictability: if threads stall inside read side critical sections, use hazard pointers as for EBR, global epoch won't progress which would put more pressure on the allocator memory growing
+					3. reclamation latency requirements: EBR reclaims in batches
+
 ----------
+Chapter 5
+	Lock Free Queues
+		SPSC
+			genuine wait freedom
+				no lock
+				no CAS loop
+				no spins on CAS failures
+			1 thread produces & 1 consumes
