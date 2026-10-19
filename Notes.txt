@@ -216,3 +216,13 @@ Chapter 5
 				no CAS loop
 				no spins on CAS failures
 			1 thread produces & 1 consumes
+		Bounded MPMC
+			assign each slot in the array it's own sequence number
+			slot can have four states:
+				1. ready to be written
+				2. being written
+				3. ready to be read
+				4. being read
+			producer claims the slot by incrementing the tail counter & then waiting for it's claimed slot sequence no. to reach 'slot is ready for writing'
+			consumer claims the slot by incrementing the head counter & then waiting for it's claimed slot sequence no. to reach 'slot is ready for reading'
+			Dmitri Vyukov
