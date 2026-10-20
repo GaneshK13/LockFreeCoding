@@ -216,7 +216,7 @@ Chapter 5
 				no CAS loop
 				no spins on CAS failures
 			1 thread produces & 1 consumes
-		Bounded MPMC
+		Bounded MPMC (Dmitri Vyukov)
 			assign each slot in the array it's own sequence number
 			slot can have four states:
 				1. ready to be written
@@ -225,4 +225,16 @@ Chapter 5
 				4. being read
 			producer claims the slot by incrementing the tail counter & then waiting for it's claimed slot sequence no. to reach 'slot is ready for writing'
 			consumer claims the slot by incrementing the head counter & then waiting for it's claimed slot sequence no. to reach 'slot is ready for reading'
-			Dmitri Vyukov
+		Unbounded MPMC (Michael Scott Queue)
+			Burst size cannot be bounded at design time
+			Singly linked list: head & tail pointers
+			head: sentinel node
+			sentinel node design eliminates the need to handle the empty queue
+			Enqueue appends new node at tail
+			Dequeue advances the head past the sentinel and returns the data from the new sentinel, which was the old front element.
+			2 step nature of enqueue operation:
+				link the new node at the end of the list
+				and advance the tail pointer to the new node
+				between these 2 steps there is a window where the tail pointer lags behind the actual end of the list.
+				Any other thread that arrives during this window must detect inconsistency and HELP complete the lagging tail advance before proceeding with its own operation.
+			variable load profiles without dropping items or blocking producers
