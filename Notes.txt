@@ -246,3 +246,14 @@ Chapter 6
 			avoid CAS bottleneck on top when multiple threads fighting
 			fundamental scalability problem when serializing operations through a single shared pointer
 			avoid ABA by pairing it with hazard pointers or EBR approach
+		Elimination backoff
+			to turn the contention problem into a throughput advantage
+			push & pull that arrive simultaneously & collide on CAS can eliminate each other without touching the stack at all
+			reducing the load on the central CAS bottleneck
+			shared collision array
+			if no elimination partner is found within the waiting window, the thread falls back to the central stack CAS
+			Pusher spins on the state for bounded no. of iterations
+			Elimination layer is an optimization layer
+			Approach can be applied to any data structure where inverse operations can cancel each other
+			Under light contention, elimination layer adds overhead
+			Good for moderate to high contention with a balance mix of push & pull operations arriving simultaneously
