@@ -257,3 +257,19 @@ Chapter 6
 			Approach can be applied to any data structure where inverse operations can cancel each other
 			Under light contention, elimination layer adds overhead
 			Good for moderate to high contention with a balance mix of push & pull operations arriving simultaneously
+		Harris's Algorithm for Safe List traversal
+			LinkedList exposes every node in the structure as a potential modification point
+			logical deletion using pointer marking
+			logically deleted node is still present in the list
+			deletion: a two phase structure
+			marking mechanism: lowest bit of the next pointer
+			lowest bit of any valid node pointer is always zero
+			repurpose that bit as a deletion mark
+			marking CAS is a single atomic operation on a single word, it cannot race with other thread
+			sentinel head & tail node are never removed
+			no next pointer is null except for tail sentinel node
+			locates two adjacent nodes:
+				a predecessor & a current node
+				predecessor's next pointer is not marked & points to current node
+				current node either matches the search key or is the first node whose key is >= search key in ordered list
+			During traversal, find() physically removes any logically deleted nodes [lazy cleanup]
