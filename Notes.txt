@@ -273,3 +273,13 @@ Chapter 6
 				predecessor's next pointer is not marked & points to current node
 				current node either matches the search key or is the first node whose key is >= search key in ordered list
 			During traversal, find() physically removes any logically deleted nodes [lazy cleanup]
+
+----------
+Chapter 7
+	Wait Free Holy Grail
+		Hard real time system, where every operation completes within a bounded guaranteed time window regardless of system load, contention level or external conditions
+		Operation has a deadline
+		Source of non-determinism
+			Memory Allocator:
+				Eliminate all dynamic allocation from critical path entirely
+				Every data structure used on the hot path must be pre-allocated during system initialization & managed thru lock free memory pool that provides O(1) bounded time acquire & release operations
